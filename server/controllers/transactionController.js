@@ -38,6 +38,23 @@ export const createTransaction = async (req, res) => {
     });
   }
 
+  if (type === "expense") {
+    const balanceData = await Transaction.aggregate([
+      { $match: { user: req.user._id, status: "completed" } },
+      { $group: { _id: "$type", total: { $sum: "$amount" } } },
+    ]);
+    const totalIncome = balanceData.find((x) => x._id === "income")?.total || 0;
+    const totalExpense = balanceData.find((x) => x._id === "expense")?.total || 0;
+    const balance = totalIncome - totalExpense;
+
+    if (Number(amount) > balance) {
+      return res.status(400).json({
+        success: false,
+        message: `Insufficient balance. Your current balance is ₹${balance.toLocaleString("en-IN")}.`,
+      });
+    }
+  }
+
   const transaction = await Transaction.create({
     transactionId: makeTransactionId(),
     user: req.user._id,

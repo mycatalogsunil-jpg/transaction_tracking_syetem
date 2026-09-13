@@ -7,7 +7,7 @@ const AddTransaction = () => {
 
   const submit = async (data) => {
     await api.post("/transactions", data);
-    navigate("/transactions");
+    return { navigate: () => navigate("/transactions") };
   };
 
   return (

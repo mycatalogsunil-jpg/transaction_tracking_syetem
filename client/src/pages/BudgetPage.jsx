@@ -9,6 +9,7 @@ const BudgetPage = () => {
   const [year, setYear] = useState(now.getFullYear());
   const [amount, setAmount] = useState("");
   const [data, setData] = useState(null);
+  const [editing, setEditing] = useState(false);
 
   const load = async () => {
     const res = await api.get("/budgets", {
@@ -24,11 +25,8 @@ const BudgetPage = () => {
 
   const save = async (e) => {
     e.preventDefault();
-    await api.post("/budgets", {
-      month,
-      year,
-      amount: Number(amount),
-    });
+    await api.post("/budgets", { month, year, amount: Number(amount) });
+    setEditing(false);
     load();
   };
 
@@ -41,6 +39,7 @@ const BudgetPage = () => {
         Set and monitor your monthly expense budget.
       </p>
 
+      {(!data?.budget || editing) && (
       <form
         onSubmit={save}
         className="mt-6 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-4"
@@ -74,13 +73,34 @@ const BudgetPage = () => {
           className="rounded-xl border border-slate-300 px-3 py-2.5"
         />
 
-        <button className="rounded-xl bg-slate-900 px-4 py-2.5 font-semibold text-white">
-          Save Budget
-        </button>
+        <div className="flex gap-2">
+          <button className="flex-1 rounded-xl bg-slate-900 px-4 py-2.5 font-semibold text-white">
+            Save Budget
+          </button>
+          {editing && (
+            <button
+              type="button"
+              onClick={() => { setEditing(false); setAmount(data?.budget?.amount || ""); }}
+              className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
+      )}
 
-      {stats && (
+      {stats && stats.amount > 0 && !editing && (
         <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <p className="text-sm font-medium text-slate-500">Monthly Budget</p>
+            <button
+              onClick={() => setEditing(true)}
+              className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-200"
+            >
+              Edit
+            </button>
+          </div>
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <p className="text-sm text-slate-500">Budget</p>

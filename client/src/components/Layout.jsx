@@ -1,6 +1,6 @@
 import {
   BarChart3,
-  Budget,
+  PiggyBank,
   LayoutDashboard,
   List,
   LogOut,
@@ -16,7 +16,7 @@ const links = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/transactions", label: "Transactions", icon: List },
   { to: "/categories", label: "Categories", icon: Tags },
-  { to: "/budget", label: "Budget", icon: Budget },
+  { to: "/budget", label: "Budget", icon: PiggyBank },
   { to: "/reports", label: "Reports", icon: BarChart3 },
   { to: "/profile", label: "Profile", icon: Settings },
 ];

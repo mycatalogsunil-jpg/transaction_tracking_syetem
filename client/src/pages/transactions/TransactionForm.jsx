@@ -1,3 +1,4 @@
+import { AlertTriangle, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import api from "../../api/axios.js";
 
@@ -16,6 +17,7 @@ const TransactionForm = ({ initialData, onSubmit, submitLabel }) => {
   const [form, setForm] = useState(defaultForm);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
+  const [budgetAlert, setBudgetAlert] = useState(null);
 
   useEffect(() => {
     api.get("/categories").then((res) => setCategories(res.data.categories));
@@ -52,15 +54,36 @@ const TransactionForm = ({ initialData, onSubmit, submitLabel }) => {
     }
   }, [form.type]);
 
+  const checkBudget = async (date, onDismiss) => {
+    const d = new Date(date);
+    const month = d.getMonth() + 1;
+    const year = d.getFullYear();
+    const res = await api.get("/budgets", { params: { month, year } });
+    const { stats } = res.data;
+    if (stats?.amount > 0 && stats.percentage >= 80) {
+      setBudgetAlert({
+        percentage: stats.percentage,
+        remaining: stats.remaining,
+        over: stats.percentage >= 100,
+        onDismiss,
+      });
+      return true;
+    }
+    return false;
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setError("");
+    setBudgetAlert(null);
 
     try {
-      await onSubmit({
-        ...form,
-        amount: Number(form.amount),
-      });
+      const result = await onSubmit({ ...form, amount: Number(form.amount) });
+      if (form.type === "expense") {
+        const hasAlert = await checkBudget(form.transactionDate, result?.navigate);
+        if (hasAlert) return;
+      }
+      if (result?.navigate) result.navigate();
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong.");
     }
@@ -71,6 +94,28 @@ const TransactionForm = ({ initialData, onSubmit, submitLabel }) => {
       onSubmit={submit}
       className="mt-6 max-w-3xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
     >
+      {budgetAlert && (
+        <div
+          className={`mb-4 flex items-start justify-between gap-3 rounded-xl p-3 text-sm ${
+            budgetAlert.over
+              ? "bg-red-50 text-red-700"
+              : "bg-amber-50 text-amber-700"
+          }`}
+        >
+          <div className="flex items-start gap-2">
+            <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+            <span>
+              {budgetAlert.over
+                ? `Budget exceeded! You are ₹${Math.abs(budgetAlert.remaining).toLocaleString("en-IN")} over your monthly budget.`
+                : `Warning: ${budgetAlert.percentage}% of your monthly budget is used. Only ₹${budgetAlert.remaining.toLocaleString("en-IN")} remaining.`}
+            </span>
+          </div>
+          <button onClick={() => { setBudgetAlert(null); if (budgetAlert.onDismiss) budgetAlert.onDismiss(); }} className="shrink-0">
+            <X size={15} />
+          </button>
+        </div>
+      )}
+
       {error && (
         <div className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-600">
           {error}
